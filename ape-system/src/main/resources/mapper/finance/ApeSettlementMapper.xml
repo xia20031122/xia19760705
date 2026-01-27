@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ape.apesystem.mapper.ApeSettlementMapper">
+
+    <resultMap id="SettlementResultMap" type="com.ape.apesystem.domain.ApeSettlement">
+        <id column="id" property="id"/>
+        <result column="settlement_no" property="settlementNo"/>
+        <result column="supplier_id" property="supplierId"/>
+        <result column="supplier_name" property="supplierName"/>
+        <result column="total_amount" property="totalAmount"/>
+        <result column="order_count" property="orderCount"/>
+        <result column="commission_rate" property="commissionRate"/>
+        <result column="commission_amount" property="commissionAmount"/>
+        <result column="settlement_amount" property="settlementAmount"/>
+        <result column="status" property="status"/>
+        <result column="start_date" property="startDate"/>
+        <result column="end_date" property="endDate"/>
+        <result column="settlement_time" property="settlementTime"/>
+        <result column="remark" property="remark"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <!-- 统计供应商待结算金额 -->
+    <select id="sumPendingSettlement" resultType="map">
+        SELECT 
+            COUNT(*) as count,
+            IFNULL(SUM(settlement_amount), 0) as amount
+        FROM ape_settlement
+        WHERE status = 0
+        <if test="supplierId != null and supplierId != ''">
+            AND supplier_id = #{supplierId}
+        </if>
+    </select>
+
+    <!-- 统计日/月/年销售额 -->
+    <select id="statisticsSales" resultType="map">
+        SELECT 
+            <choose>
+                <when test="type == 'day'">
+                    DATE_FORMAT(create_time, '%Y-%m-%d') as date_key,
+                </when>
+                <when test="type == 'month'">
+                    DATE_FORMAT(create_time, '%Y-%m') as date_key,
+                </when>
+                <otherwise>
+                    DATE_FORMAT(create_time, '%Y') as date_key,
+                </otherwise>
+            </choose>
+            COUNT(*) as order_count,
+            SUM(price) as total_sales
+        FROM ape_vegetable_order
+        WHERE state = 3
+        <if test="startDate != null">
+            AND create_time >= #{startDate}
+        </if>
+        <if test="endDate != null">
+            AND create_time &lt;= #{endDate}
+        </if>
+        GROUP BY date_key
+        ORDER BY date_key
+    </select>
+
+    <!-- 统计各供应商销售额排行 -->
+    <select id="supplierSalesRank" resultType="map">
+        SELECT 
+            o.create_by as supplier_id,
+            u.user_name as supplier_name,
+            COUNT(*) as order_count,
+            SUM(o.price) as total_sales
+        FROM ape_vegetable_order o
+        LEFT JOIN ape_user u ON o.create_by = u.id
+        WHERE o.state = 3
+        <if test="startDate != null">
+            AND o.create_time >= #{startDate}
+        </if>
+        <if test="endDate != null">
+            AND o.create_time &lt;= #{endDate}
+        </if>
+        GROUP BY o.create_by, u.user_name
+        ORDER BY total_sales DESC
+        <if test="limit != null">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+</mapper>

@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ape.apesystem.mapper.ApeUserBehaviorMapper">
+
+    <resultMap id="UserBehaviorResultMap" type="com.ape.apesystem.domain.ApeUserBehavior">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="vegetable_id" property="vegetableId"/>
+        <result column="type_id" property="typeId"/>
+        <result column="behavior_type" property="behaviorType"/>
+        <result column="keyword" property="keyword"/>
+        <result column="weight" property="weight"/>
+        <result column="create_time" property="createTime"/>
+    </resultMap>
+
+    <!-- 获取用户偏好分类（按权重排序） -->
+    <select id="getUserPreferredTypes" resultType="map">
+        SELECT 
+            type_id,
+            SUM(weight) as total_weight,
+            COUNT(*) as behavior_count
+        FROM ape_user_behavior
+        WHERE user_id = #{userId}
+          AND type_id IS NOT NULL
+          AND type_id != ''
+        GROUP BY type_id
+        ORDER BY total_weight DESC
+        <if test="limit != null">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <!-- 获取用户最近浏览的商品 -->
+    <select id="getRecentViewedVegetables" resultType="string">
+        SELECT DISTINCT vegetable_id
+        FROM ape_user_behavior
+        WHERE user_id = #{userId}
+          AND behavior_type = 1
+          AND vegetable_id IS NOT NULL
+        ORDER BY create_time DESC
+        <if test="limit != null">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <!-- 获取热门商品（按行为统计） -->
+    <select id="getHotVegetables" resultType="map">
+        SELECT 
+            vegetable_id,
+            SUM(weight) as total_weight,
+            COUNT(*) as behavior_count
+        FROM ape_user_behavior
+        WHERE vegetable_id IS NOT NULL
+        <if test="startDate != null">
+            AND create_time >= #{startDate}
+        </if>
+        GROUP BY vegetable_id
+        ORDER BY total_weight DESC
+        <if test="limit != null">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <!-- 获取用户购买过的商品分类 -->
+    <select id="getUserPurchasedTypes" resultType="string">
+        SELECT DISTINCT type_id
+        FROM ape_user_behavior
+        WHERE user_id = #{userId}
+          AND behavior_type = 4
+          AND type_id IS NOT NULL
+    </select>
+
+</mapper>

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ape.apesystem.mapper.ApeStockRecordMapper">
+
+    <resultMap id="StockRecordResultMap" type="com.ape.apesystem.domain.ApeStockRecord">
+        <id column="id" property="id"/>
+        <result column="stock_id" property="stockId"/>
+        <result column="vegetable_id" property="vegetableId"/>
+        <result column="type" property="type"/>
+        <result column="quantity" property="quantity"/>
+        <result column="before_quantity" property="beforeQuantity"/>
+        <result column="after_quantity" property="afterQuantity"/>
+        <result column="order_id" property="orderId"/>
+        <result column="operator_id" property="operatorId"/>
+        <result column="operator_name" property="operatorName"/>
+        <result column="remark" property="remark"/>
+        <result column="create_time" property="createTime"/>
+        <result column="vegetable_name" property="vegetableName"/>
+    </resultMap>
+
+    <!-- 分页查询库存变动记录（关联商品信息） -->
+    <select id="selectRecordPage" resultMap="StockRecordResultMap">
+        SELECT r.*, v.name as vegetable_name
+        FROM ape_stock_record r
+        LEFT JOIN ape_vegetable v ON r.vegetable_id = v.id
+        <where>
+            <if test="record.vegetableId != null and record.vegetableId != ''">
+                AND r.vegetable_id = #{record.vegetableId}
+            </if>
+            <if test="record.type != null">
+                AND r.type = #{record.type}
+            </if>
+            <if test="record.orderId != null and record.orderId != ''">
+                AND r.order_id = #{record.orderId}
+            </if>
+            <if test="record.vegetableName != null and record.vegetableName != ''">
+                AND v.name LIKE CONCAT('%', #{record.vegetableName}, '%')
+            </if>
+        </where>
+        ORDER BY r.create_time DESC
+    </select>
+
+</mapper>

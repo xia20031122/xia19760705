@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ape.apesystem.mapper.ApeStockMapper">
+
+    <resultMap id="StockResultMap" type="com.ape.apesystem.domain.ApeStock">
+        <id column="id" property="id"/>
+        <result column="vegetable_id" property="vegetableId"/>
+        <result column="quantity" property="quantity"/>
+        <result column="warning_quantity" property="warningQuantity"/>
+        <result column="locked_quantity" property="lockedQuantity"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="vegetable_name" property="vegetableName"/>
+        <result column="vegetable_images" property="vegetableImages"/>
+    </resultMap>
+
+    <!-- 分页查询库存（关联商品信息） -->
+    <select id="selectStockPage" resultMap="StockResultMap">
+        SELECT s.*, v.name as vegetable_name, v.images as vegetable_images
+        FROM ape_stock s
+        LEFT JOIN ape_vegetable v ON s.vegetable_id = v.id
+        <where>
+            <if test="stock.vegetableId != null and stock.vegetableId != ''">
+                AND s.vegetable_id = #{stock.vegetableId}
+            </if>
+            <if test="stock.vegetableName != null and stock.vegetableName != ''">
+                AND v.name LIKE CONCAT('%', #{stock.vegetableName}, '%')
+            </if>
+        </where>
+        ORDER BY s.update_time DESC
+    </select>
+
+    <!-- 查询库存预警列表 -->
+    <select id="selectWarningList" resultMap="StockResultMap">
+        SELECT s.*, v.name as vegetable_name, v.images as vegetable_images
+        FROM ape_stock s
+        LEFT JOIN ape_vegetable v ON s.vegetable_id = v.id
+        WHERE s.quantity &lt;= s.warning_quantity
+        ORDER BY s.quantity ASC
+    </select>
+
+    <!-- 根据商品ID查询库存 -->
+    <select id="selectByVegetableId" resultMap="StockResultMap">
+        SELECT s.*, v.name as vegetable_name, v.images as vegetable_images
+        FROM ape_stock s
+        LEFT JOIN ape_vegetable v ON s.vegetable_id = v.id
+        WHERE s.vegetable_id = #{vegetableId}
+    </select>
+
+    <!-- 扣减库存（乐观锁防超卖） -->
+    <update id="deductStock">
+        UPDATE ape_stock
+        SET quantity = quantity - #{quantity},
+            update_time = NOW()
+        WHERE vegetable_id = #{vegetableId}
+          AND quantity >= #{quantity}
+    </update>
+
+    <!-- 增加库存 -->
+    <update id="increaseStock">
+        UPDATE ape_stock
+        SET quantity = quantity + #{quantity},
+            update_time = NOW()
+        WHERE vegetable_id = #{vegetableId}
+    </update>
+
+    <!-- 锁定库存 -->
+    <update id="lockStock">
+        UPDATE ape_stock
+        SET locked_quantity = locked_quantity + #{quantity},
+            update_time = NOW()
+        WHERE vegetable_id = #{vegetableId}
+          AND (quantity - locked_quantity) >= #{quantity}
+    </update>
+
+    <!-- 解锁库存 -->
+    <update id="unlockStock">
+        UPDATE ape_stock
+        SET locked_quantity = locked_quantity - #{quantity},
+            update_time = NOW()
+        WHERE vegetable_id = #{vegetableId}
+          AND locked_quantity >= #{quantity}
+    </update>
+
+    <!-- 确认扣减库存（将锁定库存转为实际出库） -->
+    <update id="confirmDeduct">
+        UPDATE ape_stock
+        SET quantity = quantity - #{quantity},
+            locked_quantity = locked_quantity - #{quantity},
+            update_time = NOW()
+        WHERE vegetable_id = #{vegetableId}
+          AND quantity >= #{quantity}
+          AND locked_quantity >= #{quantity}
+    </update>
+
+</mapper>
