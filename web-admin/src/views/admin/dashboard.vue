@@ -165,7 +165,13 @@ const fetchRecentOrders = async () => {
   loading.value = true
   try {
     const res = await getOrderPage({ pageNumber: 1, pageSize: 5 })
-    recentOrders.value = res.data?.records || []
+    // Map state to status for frontend consistency
+    recentOrders.value = (res.data?.records || []).map(order => ({
+      ...order,
+      status: order.state,
+      orderNo: order.orderNumber,
+      vegetableName: order.name
+    }))
   } catch (error) {
     console.error('获取订单列表失败:', error)
   } finally {

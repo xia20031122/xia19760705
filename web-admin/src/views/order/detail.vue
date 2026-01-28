@@ -216,7 +216,13 @@ const fetchOrder = async (id) => {
   loading.value = true
   try {
     const res = await getOrderById(id)
-    order.value = res.data || {}
+    // Map state to status and other fields for frontend consistency
+    order.value = {
+      ...res.data,
+      status: res.data?.state,
+      orderNo: res.data?.orderNumber,
+      vegetableName: res.data?.name
+    } || {}
   } catch (error) {
     console.error('获取订单详情失败:', error)
   } finally {
