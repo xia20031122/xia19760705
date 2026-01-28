@@ -215,7 +215,7 @@ const handlePay = (order) => {
 const confirmPay = async () => {
   paying.value = true
   try {
-    await payOrder({ id: currentOrder.value.id })
+    await payOrder({ orderId: currentOrder.value.id })
     ElMessage.success('支付成功')
     showPayDialog.value = false
     fetchOrders()
@@ -230,7 +230,7 @@ const confirmPay = async () => {
 const handleCancel = async (order) => {
   try {
     await ElMessageBox.confirm('确定要取消该订单吗？', '提示', { type: 'warning' })
-    await cancelOrder({ id: order.id })
+    await cancelOrder({ orderId: order.id })
     ElMessage.success('订单已取消')
     fetchOrders()
   } catch (error) {
@@ -242,7 +242,7 @@ const handleCancel = async (order) => {
 const handleConfirm = async (order) => {
   try {
     await ElMessageBox.confirm('确认已收到商品？', '提示', { type: 'info' })
-    await confirmReceive({ id: order.id })
+    await confirmReceive({ orderId: order.id })
     ElMessage.success('已确认收货')
     fetchOrders()
   } catch (error) {

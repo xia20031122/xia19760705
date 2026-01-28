@@ -155,6 +155,32 @@
         </el-button>
       </template>
     </el-dialog>
+    
+    <!-- 支付弹窗 -->
+    <el-dialog
+      v-model="showPayDialog"
+      title="订单支付"
+      width="400px"
+      :close-on-click-modal="false"
+    >
+      <div class="pay-content">
+        <p class="pay-amount">支付金额：<span>¥{{ (totalAmount + freight).toFixed(2) }}</span></p>
+        <p class="pay-tip">请选择支付方式：</p>
+        <div class="pay-methods">
+          <div class="pay-method active">
+            <el-icon><Wallet /></el-icon>
+            <span>模拟支付</span>
+          </div>
+        </div>
+      </div>
+      
+      <template #footer>
+        <el-button @click="payLater">稍后支付</el-button>
+        <el-button type="primary" :loading="paying" @click="confirmPay">
+          确认支付
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -164,8 +190,9 @@ import { useRoute, useRouter } from 'vue-router'
 import { useCartStore } from '@/stores/cart'
 import { getAddressList, saveAddress } from '@/api/address'
 import { getVegetableById } from '@/api/vegetable'
-import { saveOrder, saveCarOrder } from '@/api/order'
+import { saveOrder, saveCarOrder, payOrder } from '@/api/order'
 import { ElMessage } from 'element-plus'
+import { Wallet } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -178,6 +205,11 @@ const selectedAddressId = ref('')
 const orderItems = ref([])
 const remark = ref('')
 const freight = ref(0) // 运费
+
+// 支付弹窗相关
+const showPayDialog = ref(false)
+const paying = ref(false)
+const createdOrderId = ref('')
 
 // 地址弹窗
 const showAddressDialog = ref(false)
@@ -308,11 +340,17 @@ const handleSubmit = async () => {
     
     let res
     if (type === 'cart') {
-      // 购物车下单
+      // 购物车下单 - 需要传递选中的购物车项目数组
+      const selectedCartItems = orderItems.value.map(item => ({
+        id: item.id,
+        vegetableId: item.vegetableId,
+        name: item.vegetableName || item.name,
+        num: item.num || item.quantity
+      }))
+      
       res = await saveCarOrder({
-        carIds: route.query.ids,
-        addressId: selectedAddressId.value,
-        name: address.name,
+        arr: selectedCartItems,
+        realName: address.name,
         tel: address.tel,
         address: `${address.province}${address.city}${address.area}${address.address}`,
         remark: remark.value
@@ -323,8 +361,7 @@ const handleSubmit = async () => {
       res = await saveOrder({
         vegetableId: item.vegetableId || item.id,
         num: item.quantity || item.num,
-        addressId: selectedAddressId.value,
-        name: address.name,
+        realName: address.name,
         tel: address.tel,
         address: `${address.province}${address.city}${address.area}${address.address}`,
         remark: remark.value
@@ -339,13 +376,38 @@ const handleSubmit = async () => {
       cartStore.fetchCartList()
     }
     
-    // 跳转到订单详情或支付页面
-    router.push(`/user/orders/${res.data?.id || res.data}`)
+    // 保存订单ID并显示支付窗口
+    createdOrderId.value = res.data?.id || res.data
+    showPayDialog.value = true
   } catch (error) {
     console.error('提交订单失败:', error)
   } finally {
     submitting.value = false
   }
+}
+
+// 确认支付
+const confirmPay = async () => {
+  paying.value = true
+  try {
+    await payOrder({ orderId: createdOrderId.value })
+    ElMessage.success('支付成功')
+    showPayDialog.value = false
+    
+    // 跳转到订单列表，并显示待发货订单
+    router.push('/user/orders?status=1')
+  } catch (error) {
+    console.error('支付失败:', error)
+    ElMessage.error('支付失败，请稍后重试')
+  } finally {
+    paying.value = false
+  }
+}
+
+// 稍后支付，跳转到订单详情
+const payLater = () => {
+  showPayDialog.value = false
+  router.push(`/user/orders/${createdOrderId.value}`)
 }
 
 onMounted(() => {
@@ -556,5 +618,47 @@ onMounted(() => {
 .region-inputs {
   display: flex;
   gap: 8px;
+}
+
+// 支付弹窗样式
+.pay-content {
+  .pay-amount {
+    font-size: 16px;
+    color: #333;
+    margin-bottom: 16px;
+    
+    span {
+      font-size: 24px;
+      font-weight: 600;
+      color: #f56c6c;
+    }
+  }
+  
+  .pay-tip {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 12px;
+  }
+  
+  .pay-methods {
+    display: flex;
+    gap: 12px;
+  }
+  
+  .pay-method {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    cursor: pointer;
+    
+    &.active {
+      border-color: #67c23a;
+      background: #f0f9eb;
+      color: #67c23a;
+    }
+  }
 }
 </style>

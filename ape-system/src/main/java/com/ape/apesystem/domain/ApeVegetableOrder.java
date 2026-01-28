@@ -51,9 +51,14 @@ public class ApeVegetableOrder implements Serializable {
     private Integer num;
 
     /**
-     * 价格
+     * 单价
      */
     private Float price;
+
+    /**
+     * 总价
+     */
+    private Float totalPrice;
 
     /**
      * 单位

@@ -127,7 +127,7 @@
         <div class="section price-section">
           <div class="price-row">
             <span>商品金额：</span>
-            <span>¥{{ (order.price * order.num).toFixed(2) }}</span>
+            <span>¥{{ order.totalPrice?.toFixed(2) || (order.price * order.num).toFixed(2) }}</span>
           </div>
           <div class="price-row">
             <span>运费：</span>
@@ -144,7 +144,7 @@
     <!-- 支付弹窗 -->
     <el-dialog v-model="showPayDialog" title="订单支付" width="400px">
       <div class="pay-content">
-        <p class="pay-amount">支付金额：<span>¥{{ order.totalPrice?.toFixed(2) }}</span></p>
+        <p class="pay-amount">支付金额：<span>¥{{ order.totalPrice?.toFixed(2) || (order.price * order.num).toFixed(2) }}</span></p>
         <p class="pay-tip">请选择支付方式：</p>
         <div class="pay-methods">
           <div class="pay-method active">
@@ -244,7 +244,7 @@ const handlePay = () => {
 const confirmPay = async () => {
   paying.value = true
   try {
-    await payOrder({ id: order.value.id })
+    await payOrder({ orderId: order.value.id })
     ElMessage.success('支付成功')
     showPayDialog.value = false
     fetchOrder(order.value.id)
@@ -259,7 +259,7 @@ const confirmPay = async () => {
 const handleCancel = async () => {
   try {
     await ElMessageBox.confirm('确定要取消该订单吗？', '提示', { type: 'warning' })
-    await cancelOrder({ id: order.value.id })
+    await cancelOrder({ orderId: order.value.id })
     ElMessage.success('订单已取消')
     fetchOrder(order.value.id)
   } catch (error) {
@@ -271,7 +271,7 @@ const handleCancel = async () => {
 const handleConfirm = async () => {
   try {
     await ElMessageBox.confirm('确认已收到商品？', '提示', { type: 'info' })
-    await confirmReceive({ id: order.value.id })
+    await confirmReceive({ orderId: order.value.id })
     ElMessage.success('已确认收货')
     fetchOrder(order.value.id)
   } catch (error) {
