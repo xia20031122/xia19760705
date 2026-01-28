@@ -113,7 +113,8 @@ public class ApeVegetableOrderController {
         apeVegetableOrder.setOrderNumber(orderNumber);
         apeVegetableOrder.setUnit(vegetable.getUnit());
         apeVegetableOrder.setImages(vegetable.getImages());
-        apeVegetableOrder.setPrice(vegetable.getPrice() * num);
+        apeVegetableOrder.setPrice(vegetable.getPrice()); // 单价
+        apeVegetableOrder.setTotalPrice(vegetable.getPrice() * num); // 总价
         apeVegetableOrder.setNum(num);
         apeVegetableOrder.setState(0); // 待付款
         ApeUser user = ShiroUtils.getUserInfo();
@@ -179,7 +180,8 @@ public class ApeVegetableOrderController {
             apeVegetableOrder.setOrderNumber(IdWorker.getMillisecond());
             apeVegetableOrder.setName(vegetable.getName());
             apeVegetableOrder.setNum(apeCar.getNum());
-            apeVegetableOrder.setPrice(vegetable.getPrice() * apeCar.getNum());
+            apeVegetableOrder.setPrice(vegetable.getPrice()); // 单价
+            apeVegetableOrder.setTotalPrice(vegetable.getPrice() * apeCar.getNum()); // 总价
             apeVegetableOrder.setUnit(vegetable.getUnit());
             apeVegetableOrder.setImages(vegetable.getImages());
             apeVegetableOrder.setUserId(ShiroUtils.getUserInfo().getId());
